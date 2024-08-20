@@ -15,6 +15,7 @@ import RIFT.lalsimutils as lalsimutils
 import numpy as np
 import astropy.units as u
 from astropy.time import Time
+import astropy.constants as ac
 from gwpy.timeseries import TimeSeries
 
 has_gws= False
@@ -108,7 +109,7 @@ def hlmoft(P, Lmax=2,approx_string=None,**kwargs):
 
     # Repack in conventional structure (typing)
     hlmT = {}
-    for mode in hlm:
+    for mode  in hlm:
         if isinstance(mode, str):  # skip 'time_array'
             continue
         if mode[0] > Lmax:  # skip modes with L > Lmax
@@ -128,7 +129,20 @@ def hlmoft(P, Lmax=2,approx_string=None,**kwargs):
                 h = lal.ResizeCOMPLEX16TimeSeries(h,0,TDlen)
         # Add to structure
         hlmT[mode] = h
-
+    if approx_string_here == 'TEOBResumSDALI':
+        nu = P.m1*P.m2/((P.m1+P.m2)**2)
+        distance_rescaling = (
+            (
+                nu
+                * (P.m1 + P.m2)
+                / P.dist
+                * ac.G
+                / ac.c ** 2
+            )
+            .value
+        )
+        for mode in hlmT:
+            hlmT[mode].data.data = distance_rescaling*hlmT[mode].data.data
     return hlmT
 
 

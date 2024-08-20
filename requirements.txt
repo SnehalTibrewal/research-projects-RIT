@@ -9,11 +9,11 @@ pandas
 corner 
 scikit-learn 
 matplotlib 
-lalsuite
+#lalsuite
 gwdatafind 
 ligo-segments 
 python-ligo-lw 
 six
 precession
-ligo.skymap
+#ligo.skymap
 gwpy

@@ -840,7 +840,7 @@ if opts.use_legend and opts.posterior_label:
 # title
 if opts.use_title:
     print(" Addding title ", opts.use_title)
-    plt.title(opts.use_title)
+    plt.suptitle(opts.use_title)
 
 param_postfix = "_".join(opts.parameter)
 res_base = len(opts.parameter)*dpi_base
