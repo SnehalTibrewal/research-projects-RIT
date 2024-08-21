@@ -232,6 +232,7 @@ parser.add_argument("--lambda-plot-max",default=2000,type=float)
 parser.add_argument("--lnL-cut",default=None,type=float)
 parser.add_argument("--sigma-cut",default=0.4,type=float)
 parser.add_argument("--eccentricity", action="store_true", help="Read sample files in format including eccentricity")
+parser.add_argument("--meanPerAno", action="store_true", help="Read sample files in format including meanPerAno")
 parser.add_argument("--matplotlib-block-defaults",action="store_true",help="Relies entirely on user to set plot options for plot styles from matplotlibrc")
 parser.add_argument("--no-mod-psi",action="store_true",help="Default is to take psi mod pi. If present, does not do this")
 parser.add_argument("--verbose",action='store_true',help='print matplotlibrc data')
@@ -290,6 +291,7 @@ special_param_ranges = {
   'chi_p':[0,1],
   'lambdat':[0,4000],
   'eccentricity':[0,1]
+  'meanPerAno':[0,6.28]
 }
 
 #mc_range deprecated by generic bind_param
@@ -467,6 +469,9 @@ if opts.flag_tides_in_composite:
 if opts.eccentricity:
     print(" Reading composite file, assuming eccentricity-based format ")
     field_names=("indx","m1", "m2",  "a1x", "a1y", "a1z", "a2x", "a2y", "a2z","eccentricity", "lnL", "sigmaOverL", "ntot", "neff")
+    if opts.meanPerAno:
+        print(" Reading composite file, assuming eccentricity_and_mean_anomaly-based format ")
+        field_names=("indx","m1", "m2",  "a1x", "a1y", "a1z", "a2x", "a2y", "a2z","eccentricity","meanPerAno", "lnL", "sigmaOverL", "ntot", "neff")
 field_formats = [np.float32 for x in field_names]
 composite_dtype = [ (x,float) for x in field_names] #np.dtype(names=field_names ,formats=field_formats)
 # Load posterior files

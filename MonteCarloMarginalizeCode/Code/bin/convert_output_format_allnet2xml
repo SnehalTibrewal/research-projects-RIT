@@ -20,6 +20,7 @@ parser.add_argument("--fname-output-samples",default="my_output",help="filename 
 parser.add_argument("--fref",default=20,type=float,help="filename of *.dat file [standard ILE output]")
 parser.add_argument("--fmin",default=20,type=float,help="filename of *.dat file [standard ILE output]")
 parser.add_argument("--use-eccentricity", action="store_true")
+parser.add_argument("--use-meanPerAno", action="store_true")
 parser.add_argument("--use-tides", action="store_true")
 opts=  parser.parse_args()
 
@@ -27,6 +28,8 @@ opts=  parser.parse_args()
 col_lnL=9
 if opts.use_eccentricity:
     col_lnL = 10
+    if opts.use_meanPerAno:
+        col_lnL = 11
 
 dat_orig = dat = np.loadtxt(opts.fname)
 dat_orig = dat[dat[:,col_lnL].argsort()] # sort  http://stackoverflow.com/questions/2828059/sorting-arrays-in-numpy-by-colu
@@ -50,6 +53,8 @@ for line in dat:
 
     if opts.use_eccentricity:
         P.eccentricity = line[9]
+        if opts.use_meanPerano:
+            P.meanPerAno = line[10]
 
     P.snr = line[col_lnL]
 
