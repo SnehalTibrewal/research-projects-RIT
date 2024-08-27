@@ -290,7 +290,7 @@ special_param_ranges = {
   'chi_pavg':[0,2],
   'chi_p':[0,1],
   'lambdat':[0,4000],
-  'eccentricity':[0,1]
+  'eccentricity':[0,1],
   'meanPerAno':[0,6.28]
 }
 

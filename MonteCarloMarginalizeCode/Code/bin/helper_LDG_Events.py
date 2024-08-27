@@ -1722,12 +1722,12 @@ if opts.assume_matter and opts.internal_tabular_eos_file:
         f.write(" --export-eos ")
         
 if opts.assume_eccentric:
-    with open("helper_convert_args.txt",'w+') as f:
-        f.write(" --export-eccentricity ")
-
-if opts.use_meanPerAno:
-    with open("helper_convert_args.txt",'w+') as f:
-        f.write(" --export-meanPerAno ")
+    if opts.use_meanPerAno:
+        with open("helper_convert_args.txt",'w+') as f:
+            f.write(" --export-eccentricity --export-meanPerAno ")
+    else:
+        with open("helper_convert_args.txt",'w+') as f:
+            f.write(" --export-eccentricity ")
 
 if opts.propose_fit_strategy:
     with open("helper_puff_max_it.txt",'w') as f:
