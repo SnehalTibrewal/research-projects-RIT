@@ -207,7 +207,9 @@ parser.add_argument("--force-lambda-max",default=None,type=float,help="Provde th
 parser.add_argument("--force-lambda-small-max",default=None,type=float,help="Provde this value to override the value of lambda-small-max provided") 
 parser.add_argument("--force-lambda-no-linear-init",action='store_true',help="Disables use of priors focused towards small lambda for initial iterations. Designed for PP plot tests with wide/uniform priors.")
 parser.add_argument("--force-chi-max",default=None,type=float,help="Provde this value to override the value of chi-max provided") 
-parser.add_argument("--force-chi-small-max",default=None,type=float,help="Provde this value to override the value of chi-max provided") 
+parser.add_argument("--force-chi-small-max",default=None,type=float,help="Provde this value to override the value of chi-max provided")
+parser.add_argument("--force-comp-max",default=1000,type=float,help="Provde this value to override the value of component mass in CIP provided")
+parser.add_argument("--force-comp-min",default=1,type=float,help="Provde this value to override the value of component mass in CIP provided")
 parser.add_argument("--force-ecc-max",default=None,type=float,help="Provde this value to override the value of ecc-max provided")
 parser.add_argument("--force-ecc-min",default=None,type=float,help="Provde this value to override the value of ecc-min provided")
 parser.add_argument("--force-meanPerAno-max",default=None,type=float,help="Provde this value to override the value of meanPerAno-max provided")
@@ -237,10 +239,12 @@ parser.add_argument("--cip-explode-jobs-auto",action='store_true',help="Auto-sel
 parser.add_argument("--cip-quadratic-first",action='store_true')
 parser.add_argument("--cip-sigma-cut",default=None,type=float,help="sigma-cut is an error threshold for CIP.  Passthrough")
 parser.add_argument("--n-output-samples",type=int,default=5000,help="Number of output samples generated in the final iteration")
+parser.add_argument("--n-output-samples-last",type=int,default=20000,help="Number of output samples generated in the final iteration")
 parser.add_argument("--internal-cip-cap-neff",type=int,default=500,help="Largest value for CIP n_eff to use for *non-final* iterations. ALWAYS APPLIED. ")
 parser.add_argument('--internal-cip-tripwire',type=float,help="Passed to CIP")
 parser.add_argument("--internal-cip-temper-log",action='store_true',help="Use temper_log in CIP.  Helps stabilize adaptation for high q for example")
 parser.add_argument("--internal-ile-sky-network-coordinates",action='store_true',help="Passthrough to ILE ")
+parser.add_argument("--internal-ile-sky-network-coordinates-raw",action='store_true',help="Passthrough to ILE ")
 parser.add_argument("--internal-ile-rotate-phase", action='store_true')
 parser.add_argument("--internal-loud-signal-mitigation-suite",action='store_true',help="Enable more aggressive adaptation - make sure we adapt in distance, sky location, etc rather than use uniform sampling, because we are constraining normally subdominant parameters")
 parser.add_argument("--internal-ile-freezeadapt",action='store_true',help="Passthrough to ILE ")
@@ -795,7 +799,7 @@ except:
 instructions_ile = np.loadtxt("helper_ile_args.txt", dtype=str)  # should be one line
 line = ' '.join(instructions_ile)
 if opts.internal_ile_n_max:
-    line = line.replace('--n-max 4000000 ', str(opts.internal_ile_n_max)+" ")
+    line = line.replace('--n-max 4000000 ', '--n-max ' + str(opts.internal_ile_n_max)+" ")
 line += " --l-max " + str(opts.l_max) 
 if 'data-start-time' in line and 's1z' in event_dict:  # only call this if we have (a) fixed time interval and (b) CBC parameters for event
     # Print warnings based on duration and fmin
@@ -827,6 +831,7 @@ if opts.ile_distance_prior:
     line += " --d-prior {} ".format(opts.ile_distance_prior)
 if opts.fix_bns_sky:
     line +=" --declination " + str(opts.declination) + " --right-ascension " + str(opts.right_ascension)
+    line = line.replace('--declination-cosine-sampler', '') # if we are pinning dec, we aren't using a cosine coordinate. Don't mess up.
 if opts.ile_force_gpu:
     line +=" --force-gpu-only "
 sur_location_prefix = "my_surrogates/nr_surrogates/"
@@ -862,6 +867,8 @@ if not(opts.ile_sampler_method is None):
     line += " --sampler-method {} ".format(opts.ile_sampler_method)
 if opts.internal_ile_sky_network_coordinates:
     line += " --internal-sky-network-coordinates "
+if opts.internal_ile_sky_network_coordinates_raw:
+    line += " --internal-sky-network-coordinates-raw "
 if opts.ile_no_gpu or opts.ile_sampler_method ==  "AV":  # make sure we are using the standard code path if not using GPUs
     line += " --force-xpy " 
 if opts.internal_ile_force_noreset_adapt:
@@ -955,7 +962,7 @@ for indx in np.arange(len(instructions_cip)):
     n_eff_expected_max_hard = 1e-7 * n_max_cip
     print( " cip iteration group {} : n_eff likely will be between {} and {}, you are asking for at least {} and targeting {}".format(indx,n_eff_expected_max_easy, n_eff_expected_max_hard, n_sample_min_per_worker,n_eff_cip_here))
 
-    line +=" --n-output-samples {}  --n-eff {} --n-max {}  --fail-unless-n-eff {}  ".format(int(n_sample_target/n_workers), n_eff_cip_here, n_max_cip,n_sample_min_per_worker)
+    line +=" --n-output-samples {}  --n-eff {} --n-max {}  --fail-unless-n-eff {}   --downselect-parameter m2 --downselect-parameter-range [{},{}] ".format(int(n_sample_target/n_workers), n_eff_cip_here, n_max_cip,n_sample_min_per_worker,opts.force_comp_min,opts.force_comp_max)
     if not(opts.allow_subsolar):
         line += "  --downselect-parameter m2 --downselect-parameter-range [1,1000] "
     if not(opts.cip_fit_method is None):
@@ -1319,7 +1326,7 @@ if not(opts.ile_no_gpu):
 if opts.ile_xpu:
     cmd += " --request-xpu-ILE "
 if opts.add_extrinsic:
-    cmd += " --last-iteration-extrinsic --last-iteration-extrinsic-nsamples {} ".format(opts.n_output_samples)
+    cmd += " --last-iteration-extrinsic --last-iteration-extrinsic-nsamples {} ".format(opts.n_output_samples_last)
     if opts.add_extrinsic_time_resampling:
         cmd+= " --last-iteration-extrinsic-time-resampling "
 if opts.batch_extrinsic:
