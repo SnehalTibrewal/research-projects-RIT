@@ -127,6 +127,14 @@ def hlmoft(P, Lmax=2,approx_string=None,**kwargs):
                 h = lal.ResizeCOMPLEX16TimeSeries(h,h.data.length-TDlen,TDlen)
             elif TDlen > h.data.length:   # Zero pad, extend at end
                 h = lal.ResizeCOMPLEX16TimeSeries(h,0,TDlen)
+        # WARNING:  realistically, the GWSignal mode output was NEVER tapered, oddly -- so do it by hand, following lalsimutils choices
+        if taper:
+            ntaper = int(0.01*TDlen)
+            if P.fmin > 0: # avoid failure if waveform start frequency 0 is nominally specified
+                ntaper = np.max([ntaper, int(1./(P.fmin*P.deltaT))]) 
+            vectaper= 0.5 - 0.5*np.cos(np.pi*np.arange(ntaper)/(1.*ntaper))
+            # Taper at the start of the segment
+            h.data.data[:ntaper]*=vectaper
         # Add to structure
         hlmT[mode] = h
     if approx_string_here == 'TEOBResumSDALI':
