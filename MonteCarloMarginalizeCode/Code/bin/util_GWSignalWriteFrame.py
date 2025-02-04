@@ -93,7 +93,7 @@ if T_est < opts.seglen:
 #hoft = lalsimutils.hoft(P)   # include translation of source, but NOT interpolation onto regular time grid
 #hoft = gwsignal.hoft(P,approx_string=opts.approx)
 #Hardcoding Lmax=4 SneTib
-hlm = rgws.hlmoft(P,Lmax=4, approx_string = str(opts.approx))
+hlm = gwsignal.hlmoft(P,Lmax=4, approx_string = str(opts.approx))
 hoft = lalsimutils.hoft_from_hlm(hlm,P)
 # zero pad to be opts.seglen long, if necessary
 if opts.seglen/hoft.deltaT > hoft.data.length:
