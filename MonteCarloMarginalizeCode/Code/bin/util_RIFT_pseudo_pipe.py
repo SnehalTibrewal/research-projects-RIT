@@ -305,6 +305,7 @@ parser.add_argument("--use-osg-public",action='store_true',help="Activate public
 parser.add_argument("--archive-pesummary-label",default=None,help="If provided, creates a 'pesummary' directory and fills it with this run's final output at the end of the run")
 parser.add_argument("--archive-pesummary-event-label",default="this_event",help="Label to use on the pesummary page itself")
 parser.add_argument("--internal-mitigate-fd-J-frame",default="L_frame",help="L_frame|rotate, choose method to deal with ChooseFDWaveform being in wrong frame. Default is to request L frame for inputs")
+parser.add_argument("--internal-force-puff-iterations", default=4, type=int, help="Number of iterations to be puffed")
 opts=  parser.parse_args()
 
 
@@ -972,7 +973,7 @@ with open("helper_cip_arg_list.txt",'r') as f:
 if opts.cip_explode_jobs_auto and event_dict["SNR"]:
     snr = event_dict["SNR"]
     q = P.m2/P.m1
-    n_max_jobs=1000
+    n_max_jobs=200
     n_jobs_normal_guess =  2+2*int( (1./q)*np.power(np.max([(snr/15),1]), 1.3) )  # increase number of workers linearly with SNR**1.3 and with mass ratio
     n_jobs_normal_actual = np.min([n_jobs_normal_guess,n_max_jobs])
     n_jobs_final_actual = np.min([2*n_jobs_normal_guess,n_max_jobs])
@@ -1021,7 +1022,7 @@ for indx in np.arange(len(instructions_cip)):
     n_eff_cip_last = int(n_sample_target/n_workers_last)
     if indx < len(instructions_cip)-1: # on all but 
         n_eff_cip_here= int(n_sample_target/n_workers)
-        n_eff_cip_here = np.amin([opts.internal_cip_cap_neff/n_workers + 1, n_eff_cip_here]) # n_eff: make sure to do *less* than the limit. Lowering this saves immensely on internal/exploration runtime
+        #n_eff_cip_here = np.amin([opts.internal_cip_cap_neff/n_workers + 1, n_eff_cip_here]) # n_eff: make sure to do *less* than the limit. Lowering this saves immensely on internal/exploration runtime
     else:
         n_eff_cip_here = n_eff_cip_last
     n_sample_min_per_worker = int(n_eff_cip_here/100)+2  # need at least 2 samples, and don't have any worker fall down on the job too much compared to the target
@@ -1235,13 +1236,13 @@ with open("args_cip_list.txt",'w') as f:
 
 # Write puff file
 #puff_params = " --parameter mc --parameter delta_mc --parameter chieff_aligned "
-puff_max_it =4
+puff_max_it = int(opts.internal_force_puff_iterations)
 #  Read puff args from file, if present
-try:
-    with open("helper_puff_max_it.txt",'r') as f:
-        puff_max_it = int(f.readline())
-except:
-    print( " No puff file ")
+#try:
+#    with open("helper_puff_max_it.txt",'r') as f:
+#        puff_max_it = int(f.readline())
+#except:
+#    print( " No puff file ")
 
 instructions_puff = np.loadtxt("helper_puff_args.txt", dtype=str)  # should be one line
 puff_params = ' '.join(instructions_puff)
@@ -1271,6 +1272,11 @@ with open("args_puff.txt",'w') as f:
             puff_args = puff_params + " --downselect-parameter chi1 --downselect-parameter-range [0,1] --downselect-parameter chi2 --downselect-parameter-range [0,1] "
         else:
             puff_args = puff_params # passthrough case, should not happen ...
+        if not(opts.force_eta_range is None):
+            puff_args = puff_args.replace("[0.1,0.24999999]", str(opts.force_eta_range).replace(' ',''))
+        if not(opts.force_mc_range is None):
+            puff_args +=  " --downselect-parameter mc --downselect-parameter-range " + str(opts.force_mc_range).replace(' ','')
+
         if opts.assume_matter  and not(opts.assume_matter_but_primary_bh):
             lambda_max = 5000
             lambda_small_max=5000
